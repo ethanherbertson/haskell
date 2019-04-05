@@ -1,4 +1,6 @@
 module PigLatin (translate) where
 
 translate :: String -> String
-translate xs = error "You need to implement this function."
+translate [] = []
+translate (x:xs) | elem x "aeiou"                         = [x] ++ xs ++ "ay"
+                 | True                                   = xs ++ [x] ++ "ay"
