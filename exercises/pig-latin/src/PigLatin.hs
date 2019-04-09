@@ -1,22 +1,25 @@
 module PigLatin (translate) where
 
-adday :: String -> String
-adday xs = xs ++ "ay"
+theFonz :: String -> String
+theFonz [] = []
+theFonz s = s ++ "ay"
 
-moveone :: String -> String
-moveone (x:xs) = xs ++ [x]
-moveone (xs) = xs
+moveOne :: String -> String
+moveOne (x:xs) = xs ++ [x]
+moveOne s = s
 
-movetwo :: String -> String
-movetwo = moveone . moveone
+moveTwo :: String -> String
+moveTwo = moveOne . moveOne -- efficiency?
 
-movethree :: String -> String
-movethree = moveone . movetwo
+moveThree :: String -> String
+moveThree = moveOne . moveTwo -- efficiency?
 
+-- TODO: Should probably handle upper/lower case...
 translate :: String -> String
-translate (x:y:z:rest) | elem x "aeiou"           = adday ([x, y, z] ++ rest)
-                       | elem [x, y] ["ch", "qu"] = (adday . movetwo) ([x, y, z] ++ rest)
-                       | [y, z] == "qu"           = (adday . movethree) ([x, y, z] ++ rest)
-                       | True                     = (adday . moveone) ([x, y, z] ++ rest)
-translate [] = []
-translate (xs) = xs ++ "ay"
+translate s@(x:y:z:_) | elem ' ' s               = unwords (map translate (words s))
+                      | elem x "aeiou"           = theFonz s
+                      | elem [x, y] ["yt", "xr"] = theFonz s
+                      | elem [x, y] ["qu"]       = (theFonz . moveTwo) s
+                      | [y, z] == "qu"           = (theFonz . moveThree) s
+                      | True                     = (theFonz . moveOne) s
+translate xs = theFonz xs
