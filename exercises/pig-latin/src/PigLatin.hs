@@ -1,50 +1,43 @@
 module PigLatin (translate) where
 
-theFonz :: String -> String
-theFonz [] = []
-theFonz s = s ++ "ay"
+-- Move n elements from front of array to end of it:
+rotate :: Int -> [a] -> [a]
+rotate n xs =  take (length xs) (drop n (cycle xs))
 
-moveOne :: String -> String
-moveOne (x:xs) = xs ++ [x]
-moveOne s = s
-
-moveTwo :: String -> String
-moveTwo = moveOne . moveOne -- efficiency?
-
-moveThree :: String -> String
-moveThree = moveOne . moveTwo -- efficiency?
-
-moveFour :: String -> String
-moveFour = moveTwo . moveTwo -- efficiency?
-
-move :: Int -> String -> String
-move 1 xs = moveOne xs
-move 2 xs = moveTwo xs
-move 3 xs = moveThree xs
-move 4 xs = moveFour xs
-move _ xs = xs
-
+-- TODO: Nothing below here can handle uppercase...
 isVowel :: Char -> Bool
-isVowel x = elem x "aeiouAEIOU"
+isVowel x = elem x "aeiou"
 
 isVowelOrY :: Char -> Bool
-isVowelOrY x = elem x "aeiouyAEIOUY"
+isVowelOrY x = elem x "aeiouy"
 
-leadingConsonants :: String -> String
-leadingConsonants (x:xs)    | isVowel x = ""
-                            | otherwise = [x] ++ (takeWhile (not . isVowelOrY) xs)
-leadingConsonants "" = ""
+-- Return the leading consonants, if any. Note that both 'x' and 'y' can
+-- operate as vowels at the starts of words, e.g. in "xray" and "yttria".
+-- Specifically, if and only if they're followed by more consonants.
+-- Also note that this function treats the 'u' in 'qu' as a vowel.
+--
+-- TODO: This should really treat the 'u' in 'qu' as a consonant...
+--
+leadingCons :: String -> String
+leadingCons "" = ""
+leadingCons (x:xs)  | isVowel x                                     = ""
+                    | elem x "xy" && ((not . isVowelOrY . head) xs) = "" -- e.g. "xray" or "yttria", but not "xylocarp"
+                    | otherwise                                     = [x] ++ (takeWhile (not . isVowelOrY) xs)
 
-lastConsFirstVowel :: String -> String
-lastConsFirstVowel xs   | length (leadingConsonants xs) == 0    = [head xs]
-                        | otherwise                             = last (leadingConsonants xs) : head (filter isVowel xs) : []
+-- Rotate characters in the word until you get to the first vowel sound:
+rotateToFirstVowel :: String -> String
+rotateToFirstVowel xs = rotate (length (leadingCons xs)) xs
 
-charsUntilVowel :: String -> Int
-charsUntilVowel = length . leadingConsonants
+-- Get the last of the leading consonants, and the vowel that follows it:
+lastConFirstVowel :: String -> String
+lastConFirstVowel xs    | cons == ""    = ""
+                        | cons == xs    = ""
+                        | otherwise     = take 2 (drop (length cons - 1) xs)
+    where cons = leadingCons xs
 
+-- Translate to Pig Latin. By convention, keep any "qu"s together:
 translate :: String -> String
-translate xs    | elem ' ' xs                                   = unwords (map translate (words xs))
-                | elem (leadingConsonants xs) ["xr", "yttr"]    = theFonz xs
-                | (lastConsFirstVowel xs == "qu")               = (theFonz . (move (1 + (charsUntilVowel xs)))) xs
-                | otherwise                                     = (theFonz . (move (charsUntilVowel xs))) xs
+translate xs    | elem ' ' xs                   = unwords (map translate (words xs))
+                | lastConFirstVowel xs == "qu"  = ((rotate 1) . rotateToFirstVowel) xs ++ "ay"
+                | otherwise                     = rotateToFirstVowel xs ++ "ay"
 
